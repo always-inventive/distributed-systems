@@ -22,7 +22,7 @@ public class DummyClient {
 			try {
 				 
 				message = (String) in.readObject();
-				System.out.println("Server> " + message);
+				System.out.println("Server > " + message);
 
 				out.writeObject(40.79);
 				out.flush();

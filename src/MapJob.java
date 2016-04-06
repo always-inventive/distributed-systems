@@ -21,8 +21,8 @@ public class MapJob extends Thread {
 	private Worker worker;
 	private double minLongitude, maxLongitude, minLatitude, maxLatitude;
 	
-	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-    static final String DB_URL = "jdbc:mysql://83.212.117.76:3306/ds_systems_2016?user=omada80&password=omada80db";
+	private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    private static final String DB_URL = "jdbc:mysql://83.212.117.76:3306/ds_systems_2016?user=omada80&password=omada80db";
 	
 	public MapJob(Worker worker) {
 		this.worker = worker;
@@ -31,16 +31,17 @@ public class MapJob extends Thread {
 	
 	@Override
 	public void run() {
-		ServerSocket s = openServer();
-		Connection c = connectToDatabase(s);
-		doQuery(c);
-		closeDatabaseConnection(c);
-		closeServer(s);
+		// Get the bounds
+		getBounds();
+		
+		// Execute query to database
+		doQuery();
+		
+		// Execute map function and notify done
 		map();
 		worker.notifyMasterOfCompletion();
 		sendToReducers(null);
 	}
-
 
 	public Map<String, Long> map() {
 		Stream<Checkin> stream = checkins.stream().parallel().distinct().filter(p -> p.getUrl()!=null);
@@ -60,86 +61,60 @@ public class MapJob extends Thread {
 		
 	}
 	
-	private ServerSocket openServer() {
+	private void getBounds() {
 		ServerSocket serverSocket = null;
-		try{
+		Socket connection = null;
+		
+		try {
 			serverSocket = new ServerSocket(1234);
-		}
-		catch(IOException ioe){
-			ioe.printStackTrace();
-		}
-		return serverSocket;
-	}
-	
-	private void closeServer(ServerSocket serverSocket){
-		try{
+			connection = serverSocket.accept();
+			ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
+			ObjectInputStream in = new ObjectInputStream(connection.getInputStream());
+			out.writeObject("Connection to client successful.");
+			out.flush();
+
+			minLatitude = (double) in.readObject();
+			minLongitude = (double) in.readObject();
+			maxLatitude = (double) in.readObject();
+			maxLongitude = (double) in.readObject();	
+			
+			in.close();
+			out.close();
+			connection.close();
 			serverSocket.close();
-		}catch(IOException ioe){
-			ioe.printStackTrace();
+		}
+		catch(ClassNotFoundException cnfe){
+			System.err.println("Data received in unknown format.");
+			cnfe.printStackTrace();
+		}
+		catch (IOException ioException){
+			ioException.printStackTrace();
+		}
+		finally {
+			try {
+				if (serverSocket != null)
+					serverSocket.close();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
-	
- 	private Connection connectToDatabase(ServerSocket s){
-		Connection connection = null;
+ 	
+ 	private void doQuery(){
+ 		Connection connection = null;
+ 		Statement stmt = null;
+		ResultSet rs = null;
+		
 		try{
 			Class.forName(JDBC_DRIVER);
 			System.out.println("Connecting to database...");
 			connection = DriverManager.getConnection(DB_URL);
 			System.out.println("Connected to database...");
-		}
-		catch(ClassNotFoundException e){
-			System.err.println("Database class wasn't found.");
-			e.printStackTrace();
-		}
-		catch (SQLException e){
-			System.err.println("An SQL exception was thrown.");
-			e.printStackTrace();
-		}
-		return connection;
-	}
- 	
- 	private void closeDatabaseConnection(Connection c){
- 		try {
-			c.close();
-		} 
- 		catch (SQLException sQLException) {
- 			sQLException.printStackTrace();
-		}
- 	}
- 	
-	@SuppressWarnings("unused")
-	private void getBounds(ServerSocket sSocket) throws IOException {
-		Socket connection = null;
-		
-		while(true){
-			connection = sSocket.accept();
-			ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
-			ObjectInputStream in = new ObjectInputStream(connection.getInputStream());
-			out.writeObject("Connection Successful.");
-			out.flush();
 
-			try{
-				minLatitude = (double) in.readObject();
-				minLongitude = (double) in.readObject();
-				maxLatitude = (double) in.readObject();
-				maxLongitude = (double) in.readObject();	
-			}
-			catch(ClassNotFoundException cnfe){
-				System.err.println("Data received in unknown format. ");
-				cnfe.printStackTrace();
-			}
-			in.close();
-			out.close();
-		}
-	}
-	
-	private void doQuery(Connection connection){
-		Statement stmt = null;
-		ResultSet rs = null;
-		try{
 			System.out.println("Creating statement...");
 			stmt = connection.createStatement();
-			System.out.print("Statement is created");
+			System.out.println("Statement is created.");
 			
 			int cores = Runtime.getRuntime().availableProcessors();
 			System.out.println(cores);
@@ -158,20 +133,25 @@ public class MapJob extends Thread {
 				checkins.add(new Checkin(POI, url.equals("Not exists")? null: url));
 			}
 		}
-		catch(SQLException se ){
-			se.printStackTrace();
+		catch(ClassNotFoundException e){
+			System.err.println("Database class wasn't found.");
+			e.printStackTrace();
+		}
+		catch(SQLException sqlException ){
+			sqlException.printStackTrace();
 		}
 		finally {
 			try{
 				if (rs != null)
-				rs.close();
-			if (stmt != null)
-				stmt.close();
-			}
+					rs.close();
+				if (stmt != null)
+					stmt.close();
+				if (connection != null)
+					connection.close();
+			}	
 			catch (SQLException sqlException){
 				sqlException.printStackTrace();
 			}
-			
 		}
 	}
 }
