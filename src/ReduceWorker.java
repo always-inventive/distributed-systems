@@ -19,25 +19,27 @@ public class ReduceWorker extends Worker {
 		
 		//start server, get Maps from mappers: map1, map2, map3
 		openServer();
+		key = waitForMasterAck();
+		sendResults(reduce(key, maps));
 	}
 
-	public void waitForMasterAck() {
-		
+	public int waitForMasterAck() {
+		return key;
 	}
 	
 	public Map<String, Long> reduce(int key, List<Map<String, Long>> maps) { 
 		Map<String, Long> result = null;
 		
 		for(Map<String, Long> map : maps) {
-			result = Stream.concat(result.entrySet().stream() , map.entrySet()
-					.stream()).parallel()
+			result = Stream.concat(result.entrySet().stream() , map.entrySet().stream())
+					.parallel()
 					.collect(Collectors.groupingByConcurrent(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
 		}
 		result.entrySet().stream().parallel().sorted(Map.Entry.<String,Long>comparingByValue().reversed()).limit(key);
 		return result;
 	}
 	
-	public void sendResults(Map<Integer, Object> output) {
+	public void sendResults(Map<String, Long> output) {
 		
 	}
 	
@@ -55,7 +57,7 @@ public class ReduceWorker extends Worker {
 				out.flush();
 				try {
 					//read maps, to list
-					in.readObject();
+					maps.add((Map<String, Long>)in.readObject());
 				}
 				catch(ClassNotFoundException cnfe){
 					System.err.println("Data received in unknown format. ");

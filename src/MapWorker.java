@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,16 +26,16 @@ public class MapWorker extends Worker {
 	
 	public MapWorker() {
 		checkins = new ArrayList<Checkin>();
-		//start server, get data, put in a list
 		openServer();
-		
-		
+		notifyMaster();
+		sendToReducers(map());
 	}
 	
 	public Map<String, Long> map() {
-		Stream<Checkin> stream = checkins.stream().parallel().distinct().filter(p -> p.getUrl()!=null);
-		Map<String, Long> map = stream
-				.collect(Collectors.groupingByConcurrent(Checkin::getKey, Collectors.counting()));
+		Stream<Checkin> stream = checkins.stream()
+				.parallel().distinct().filter(p -> p.getUrl()!=null);
+		Map<String, Long> map = stream.map(p -> p.getKey())
+				.collect(Collectors.groupingByConcurrent(Function.identity(), Collectors.counting()));
 		map.entrySet().stream().parallel().sorted(Map.Entry.<String,Long>comparingByValue().reversed());
 		
 		return map;
@@ -44,7 +45,7 @@ public class MapWorker extends Worker {
 		
 	}
 	
-	public void sendToReducers(Map<Integer, Object> output) {
+	public void sendToReducers(Map<String, Long> output) {
 		
 	}
 	
@@ -119,7 +120,6 @@ public class MapWorker extends Worker {
 		    }catch(SQLException se){
 		    	se.printStackTrace();
 		    }//end finally try
-		    map();
 		}//end try
 	}
 	
@@ -140,15 +140,5 @@ public class MapWorker extends Worker {
 		rs.close();
 	}
 	
-	private static class myThread implements Runnable{
-		
-		
-		@Override
-		public void run() {
-			
-			
-		}
-		
-	}
 	
 }
