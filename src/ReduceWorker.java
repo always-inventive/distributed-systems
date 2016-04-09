@@ -6,7 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Comparator;
 import java.util.List;
 
 public class ReduceWorker extends Worker {
@@ -43,12 +42,13 @@ public class ReduceWorker extends Worker {
 		
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void  openServer() {
 		ServerSocket sSocket = null;
 		Socket connection = null;
 		
 		try{
-			sSocket = new ServerSocket(1234);
+			sSocket = new ServerSocket(0);
 			while(true){
 				connection = sSocket.accept();
 				ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());

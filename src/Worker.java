@@ -8,12 +8,17 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Worker {
+
+	private int reducerKey; //max number of results to get from reducer
 	
 	private	int minLatitude;
 	private int minLongitude;
 	private int maxLatitude;
 	private int maxLongitude;
-	private int reducerKey; //max number of results to get from reducer
+	
+	private Coords coords1;
+	private Coords coords2;
+	private Coords coords3;
 	
 	public Worker() {
 		initialize();
@@ -31,12 +36,13 @@ public class Worker {
 		minLongitude = scanner.nextInt();
 		maxLatitude = scanner.nextInt();
 		maxLongitude = scanner.nextInt();
+		Split();
 		
 		System.out.println("Input reducer key (max # of spots to show)");
 		reducerKey = scanner.nextInt();
 		
 		 
-		//apostolh stous mappers (xreiazomai dieuthunseis twn mappers, isws me port 0 automath anathesh)
+		//apostolh stous mappers (xreiazomai dieuthunseis twn mappers )
 		 
 		Socket requestSocket = null;
 		ObjectOutputStream out = null;
@@ -47,18 +53,14 @@ public class Worker {
 			out = new ObjectOutputStream(requestSocket.getOutputStream());
 			in = new ObjectInputStream(requestSocket.getInputStream());
 
-			out.writeObject(minLatitude);
+			out.writeObject(coords1);
 			out.flush();
 			
-			out.writeObject(minLongitude);
+			out.writeObject(coords2);
 			out.flush();
 			
-			out.writeObject(maxLatitude);
+			out.writeObject(coords3);
 			out.flush();
-			
-			out.writeObject(maxLongitude);
-			out.flush();
-			
 			
 		}
 		catch (UnknownHostException unknownHost) {
@@ -106,13 +108,20 @@ public class Worker {
 				out.writeObject("Connection Successful.");
 				out.flush();
 				try {
+					out.writeObject(coords1);
+					out.flush();
+					
+					out.writeObject(coords2);
+					out.flush();
+					
+					out.writeObject(coords3);
+					out.flush();
 					
 					map1 = (boolean) in.readObject(); //boolean apo mappers x3
 					map2 = (boolean) in.readObject();
 					map3 = (boolean) in.readObject();
 					if(map1 && map2 && map3) {
 						out.writeObject(reducerKey); //prepei na paei ston reducer, pros to parwn to outputstream paei ston (enan) mapper
-						
 					}
 					
 					in.readObject(); //apotelesmata reducer (pali, xreiazetai diaforetiko inputstream)
@@ -141,5 +150,11 @@ public class Worker {
 		
 	}
 	
-	
+	public void Split() {
+		int diffLatitude = maxLatitude - minLatitude;
+		coords1 = new Coords(minLatitude, minLongitude, minLatitude+(diffLatitude/3), maxLongitude);
+		coords2 = new Coords(minLatitude+(diffLatitude/3), minLongitude, minLatitude+(2*diffLatitude/3), maxLongitude);
+		coords3 = new Coords(minLatitude+(2*diffLatitude/3), minLongitude, maxLatitude, maxLongitude);
+	}
+
 }

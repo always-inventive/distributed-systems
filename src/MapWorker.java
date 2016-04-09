@@ -18,8 +18,9 @@ import java.util.stream.Stream;
 
 public class MapWorker extends Worker {
 
-	private List<Checkin> checkins; 	//adeio pros to parwn
+	private List<Checkin> checkins; 	
 	double minLongitude, maxLongitude, minLatitude, maxLatitude; //suntetagmenes
+	Coords coords;
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://83.212.117.76:3306/ds_systems_2016?user=omada80&password=omada80db";
 	
@@ -54,7 +55,7 @@ public class MapWorker extends Worker {
 		Socket connection = null;
 		
 		try{
-			sSocket = new ServerSocket(1234);
+			sSocket = new ServerSocket(0);
 			while(true){
 				connection = sSocket.accept();
 				ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
@@ -62,11 +63,12 @@ public class MapWorker extends Worker {
 				out.writeObject("Connection Successful.");
 				out.flush();
 				try{
-					minLatitude = (double) in.readObject();
-					minLongitude = (double) in.readObject();
-					maxLatitude = (double) in.readObject();
-					maxLongitude = (double) in.readObject();	
-
+					coords = (Coords) in.readObject();
+					minLatitude = coords.getMinLat();
+					minLongitude = coords.getMinLong();
+					maxLatitude = coords.getMaxLat();
+					maxLongitude = coords.getMaxLong();
+					
 					connectToDatabase();
 				}
 				catch(ClassNotFoundException cnfe){
