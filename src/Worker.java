@@ -27,12 +27,12 @@ public class Worker extends Thread {
 
 	public void notifyDone(){
 		sendResults(forwardAddres, forwardPort, this.job.getResults());
-		initialize();
+//		initialize();
 	}
 
 	public void sendResults(String resultReceiver, int port, Object results){
 		Connector.sendData(resultReceiver, port, results);
-		initialize();
+//		initialize();
 	}
 
 	private void initialize(){
