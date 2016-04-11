@@ -21,13 +21,10 @@ public class ReduceJob implements Job {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
-		Map<String, Long> map1 = (Map<String, Long>) Connector.receiveData(Worker.DEFAULT_PORT, 1)[0];
-		Map<String, Long> map2 = (Map<String, Long>) Connector.receiveData(Worker.DEFAULT_PORT, 1)[0];
-		Map<String, Long> map3 = (Map<String, Long>) Connector.receiveData(Worker.DEFAULT_PORT, 1)[0];
+		Map<String, Long>[] mapArray = (Map<String, Long>[]) Connector.receiveData(Worker.DEFAULT_PORT, 3);
 		maps = new ArrayList<Map<String, Long>>();
-		maps.add(map1);
-		maps.add(map2);
-		maps.add(map3);
+		for (Map<String, Long> map : mapArray)
+			maps.add(map);
 		reduce(0, maps);
 		isDone();
 	}
