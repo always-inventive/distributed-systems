@@ -22,10 +22,10 @@ public class ReduceJob implements Job, Serializable{
 	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
-		Map<String, Long>[] mapArray = (Map<String, Long>[]) Connector.receiveData(ReduceJob.DEFAULT_LISTENING_PORT, 3);
 		maps = new ArrayList<Map<String, Long>>();
-		for (Map<String, Long> map : mapArray)
-			maps.add(map);
+		Object[] mapArray = Connector.receiveData(ReduceJob.DEFAULT_LISTENING_PORT, 3);
+		for (Object map : mapArray)
+			maps.add((Map<String, Long>) map);
 		reduce(3, maps);
 		isDone();
 	}
