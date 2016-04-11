@@ -6,19 +6,24 @@ public class Master extends Thread {
 	public static final String DEFAULT_MASTER_ADDRESS = "127.0.0.1";
 	private Socket connection;
 	private String[] workerAddresses = { "127.0.0.1" , "127.0.0.1", "127.0.0.1", "127.0.0.1"};
+	private int[] workerPorts = {1896, 1897, 1898, 1899};
 	
 	public Master(Socket connection){
 		this.connection = connection;
 	}
 
 	@Override
-	public synchronized void start() {
-		Double[] coordinates = (Double[]) Connector.receiveDataFromConnection(connection, 4);
+	public synchronized void run() {
+		Double[] coordinates = new Double[4];
+		
+		Object[] temp = Connector.receiveDataFromConnection(connection, 4);
+		for (int i=0; i<temp.length; i++)
+			coordinates[i] = (Double) temp[i]; 
 		
 		ReduceJob reducer = new ReduceJob();
 		// TODO get Master's local address
 		String reducerAddress = workerAddresses[workerAddresses.length-1];
-		Connector.sendData(reducerAddress, Worker.DEFAULT_PORT, reducer, DEFAULT_MASTER_ADDRESS, DEFAULT_LISTENING_PORT);
+		Connector.sendData(reducerAddress, workerPorts[3], reducer, DEFAULT_MASTER_ADDRESS, DEFAULT_LISTENING_PORT);
 		
 		// compute the coordinates for the mappers
 		int workers = workerAddresses.length;
@@ -30,14 +35,14 @@ public class Master extends Thread {
 			mapperCoords[i][0] = coordinates[0]+ longStep*i;
 			mapperCoords[i][1] = coordinates[1]+ latStep*i;
 			mapperCoords[i][2] = coordinates[0]+ longStep*(i+1);
-			mapperCoords[i][4] = coordinates[1]+ latStep*(i+1);
+			mapperCoords[i][3] = coordinates[1]+ latStep*(i+1);
 		}
 		
 		// then create the mappers
 		for (int i=0; i<workerAddresses.length-1; i++){
 			MapJob mapper = new MapJob();
 			mapper.setCoordinates(mapperCoords[i][0], mapperCoords[i][1], mapperCoords[i][2], mapperCoords[i][3] );
-			Connector.sendData(workerAddresses[i], Worker.DEFAULT_PORT, mapper, reducerAddress, ReduceJob.DEFAULT_LISTENING_PORT);
+			Connector.sendData(workerAddresses[i], workerPorts[i], mapper, reducerAddress, ReduceJob.DEFAULT_LISTENING_PORT);
 		}
 		
 		// Finally, return the results

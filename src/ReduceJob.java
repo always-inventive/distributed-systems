@@ -1,11 +1,12 @@
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReduceJob implements Job {
-	public final static int DEFAULT_LISTENING_PORT = 1234;
+public class ReduceJob implements Job, Serializable{
+	public final static int DEFAULT_LISTENING_PORT = 1568;
 	private List<Map<String, Long>> maps;
 	private int key;
 	private Worker worker;
@@ -21,11 +22,11 @@ public class ReduceJob implements Job {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
-		Map<String, Long>[] mapArray = (Map<String, Long>[]) Connector.receiveData(Worker.DEFAULT_PORT, 3);
+		Map<String, Long>[] mapArray = (Map<String, Long>[]) Connector.receiveData(ReduceJob.DEFAULT_LISTENING_PORT, 3);
 		maps = new ArrayList<Map<String, Long>>();
 		for (Map<String, Long> map : mapArray)
 			maps.add(map);
-		reduce(0, maps);
+		reduce(3, maps);
 		isDone();
 	}
 

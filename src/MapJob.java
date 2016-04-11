@@ -1,4 +1,5 @@
 import java.util.List;
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -10,7 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class MapJob extends Thread implements Job {
+public class MapJob extends Thread implements Job, Serializable {
 
 	private List<Checkin> checkins;
 	private Worker worker;

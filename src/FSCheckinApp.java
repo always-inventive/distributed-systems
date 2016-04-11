@@ -2,10 +2,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class FSCheckinApp {
+public class FSCheckinApp extends Thread{
 	public static final int DEFAULT_SOCKET = 4321;
 
-	public static void main(String[] args) {
+	public void run() {
 		ServerSocket serverSocket = null;
 		try {
 			serverSocket = new ServerSocket(DEFAULT_SOCKET);

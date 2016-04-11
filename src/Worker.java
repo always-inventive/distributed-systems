@@ -1,15 +1,22 @@
 
-public class Worker {
-	public static final int DEFAULT_PORT = 1234;
+public class Worker extends Thread {
+	public static final int DEFAULT_PORT = 1236;
 	
 	private Job job;
 	private String forwardAddres;
 	private int forwardPort;
+	private int port;
 	
 	public Worker() {
-		initialize();
 	}
 
+	public void run(){
+		initialize();
+	}
+	
+	public void setPort(int port){
+		this.port = port;
+	}
 	public void setJob(Job job){
 		this.job = job;
 	}
@@ -29,7 +36,7 @@ public class Worker {
 	}
 
 	private void initialize(){
-		Object[] data = Connector.receiveData(DEFAULT_PORT, 3);
+		Object[] data = Connector.receiveData(port, 3);
 		this.job = (Job) data[0];
 		this.job.setWorker(this);
 		this.forwardAddres = (String) data[1];
