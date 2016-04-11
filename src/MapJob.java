@@ -1,9 +1,4 @@
 import java.util.List;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -15,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class MapJob extends Thread {
+public class MapJob extends Thread implements Job {
 
 	private List<Checkin> checkins;
 	private Worker worker;
@@ -29,79 +24,32 @@ public class MapJob extends Thread {
 		checkins = new ArrayList<Checkin>();	
 	}
 	
+	public void setCoordinates(double minLongitude, double minLatitude, double maxLongitude, double maxLatitude){
+		this.minLongitude = minLongitude;
+		this.minLatitude = minLatitude; 
+		this.maxLongitude = maxLongitude;
+		this.maxLatitude = maxLatitude;
+	}
+	
 	@Override
 	public void run() {
-		// Get the bounds
-		getBounds();
-		
 		// Execute query to database
 		doQuery();
 		
 		// Execute map function and notify done
 		map();
-		worker.notifyMasterOfCompletion();
-		sendToReducers(null);
+		isDone();
 	}
 
-	public Map<String, Long> map() {
-		Stream<Checkin> stream = checkins.stream().parallel().distinct().filter(p -> p.getUrl()!=null);
-		Map<String, Long> map = stream
-				.collect(Collectors.groupingByConcurrent(Checkin::getKey, Collectors.counting()));
-		map.entrySet().stream().parallel().sorted(Map.Entry.<String,Long>comparingByValue().reversed());
-		
-		return map;
+	public void isDone() {
+		worker.notifyDone();
 	}
 	
-	@SuppressWarnings("unused")
-	private void notifyMaster() {
-		
-	}
-	
-	public void sendToReducers(Map<Integer, Object> output) {
-		
-	}
-	
-	private void getBounds() {
-		ServerSocket serverSocket = null;
-		Socket connection = null;
-		
-		try {
-			serverSocket = new ServerSocket(1234);
-			connection = serverSocket.accept();
-			ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
-			ObjectInputStream in = new ObjectInputStream(connection.getInputStream());
-			out.writeObject("Connection to client successful.");
-			out.flush();
-
-			minLatitude = (double) in.readObject();
-			minLongitude = (double) in.readObject();
-			maxLatitude = (double) in.readObject();
-			maxLongitude = (double) in.readObject();	
-			
-			in.close();
-			out.close();
-			connection.close();
-			serverSocket.close();
-		}
-		catch(ClassNotFoundException cnfe){
-			System.err.println("Data received in unknown format.");
-			cnfe.printStackTrace();
-		}
-		catch (IOException ioException){
-			ioException.printStackTrace();
-		}
-		finally {
-			try {
-				if (serverSocket != null)
-					serverSocket.close();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+	public Object getResults(){
+		return checkins;
 	}
  	
- 	private void doQuery(){
+  	private void doQuery(){
  		Connection connection = null;
  		Statement stmt = null;
 		ResultSet rs = null;
@@ -153,5 +101,14 @@ public class MapJob extends Thread {
 				sqlException.printStackTrace();
 			}
 		}
+	}
+
+	private Map<String, Long> map() {
+		Stream<Checkin> stream = checkins.stream().parallel().distinct().filter(p -> p.getUrl()!=null);
+		Map<String, Long> map = stream
+				.collect(Collectors.groupingByConcurrent(Checkin::getKey, Collectors.counting()));
+		map.entrySet().stream().parallel().sorted(Map.Entry.<String,Long>comparingByValue().reversed());
+		
+		return map;
 	}
 }
