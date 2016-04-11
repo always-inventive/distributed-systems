@@ -1,4 +1,6 @@
-public class Checkin {
+import java.io.Serializable;
+
+public class Checkin implements Serializable {
 	
 	private String POI;
 	private String url;

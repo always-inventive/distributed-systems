@@ -19,11 +19,13 @@ public class MapJob extends Thread implements Job {
 	private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     private static final String DB_URL = "jdbc:mysql://83.212.117.76:3306/ds_systems_2016?user=omada80&password=omada80db";
 	
-	public MapJob(Worker worker) {
-		this.worker = worker;
+	public MapJob() {
 		checkins = new ArrayList<Checkin>();	
 	}
 	
+	public void setWorker(Worker worker){
+		this.worker = worker;
+	}
 	public void setCoordinates(double minLongitude, double minLatitude, double maxLongitude, double maxLatitude){
 		this.minLongitude = minLongitude;
 		this.minLatitude = minLatitude; 

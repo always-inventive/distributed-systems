@@ -1,12 +1,10 @@
 
 public class Worker {
-	public static final String DEFAULT_ADDRESS = "127.0.0.1";
-	public static final String DEFAULT_MASTER = "127.0.0.1";
-	public static final String DEFAULT_RESULTS_ADDRESS = "127.0.0.1";
-	public static final int DEFAULT_INCOMING_PORT = 1234;
-	public static final int DEFAULT_OUTGOING_PORT = 1234;
+	public static final int DEFAULT_PORT = 1234;
 	
 	private Job job;
+	private String forwardAddres;
+	private int forwardPort;
 	
 	public Worker() {
 		initialize();
@@ -21,7 +19,7 @@ public class Worker {
 	}
 
 	public void notifyDone(){
-		sendResults(DEFAULT_RESULTS_ADDRESS, DEFAULT_OUTGOING_PORT, this.job.getResults());
+		sendResults(forwardAddres, forwardPort, this.job.getResults());
 		initialize();
 	}
 
@@ -31,7 +29,11 @@ public class Worker {
 	}
 
 	private void initialize(){
-		this.job = (Job) Connector.receiveData(DEFAULT_INCOMING_PORT, 1)[0];
+		Object[] data = Connector.receiveData(DEFAULT_PORT, 3);
+		this.job = (Job) data[0];
+		this.job.setWorker(this);
+		this.forwardAddres = (String) data[1];
+		this.forwardPort = (int) data[2];
 		startWorking();
 	}
 }
